@@ -7,6 +7,7 @@ import random
 import re
 import requests
 import sys
+import yaml
 
 def get_terms(json, n=3):
   '''Get a list of n acceptable random terms from the JSON array.'''
@@ -52,16 +53,19 @@ def oauth_session():
   import os
   import requests_oauthlib as requests
 
-  key = os.environ.get('PORNDOGE_KEY')
-  secret = os.environ.get('PORNDOGE_SECRET')
-  if not key or not secret:
-    app.logger.error('OAuth client credentials not set.')
-    return flask.abort(500)
+  with open('config.yaml') as yaml_file:
+    config = yaml.load(yaml_file)
 
-  base_url = os.environ.get('PORNDOGE_BASE_URL')
-  if not base_url:
-    app.logger.error('Base URL not set.')
-    return flask.abort(500)
+    base_url = config.get('base_url')
+    if not base_url:
+      app.logger.error('Base URL not set in config.yaml.')
+      return flask.abort(500)
+
+    twitter = config.get('twitter')
+    key, secret = twitter.get('key'), twitter.get('secret')
+    if not key or not secret:
+      app.logger.error('Application API credentials not set in config.yaml.')
+      return flask.abort(500)
 
   flask.g.session = requests.OAuth1Session(key, client_secret=secret,
       callback_uri='{}/callback'.format(base_url.rstrip('/')))

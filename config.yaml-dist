@@ -1,0 +1,4 @@
+base_url: http://localhost/
+twitter:
+  key: twitter-api-key
+  secret: twitter-api-secret
