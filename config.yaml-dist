@@ -1,4 +1,28 @@
 base_url: http://localhost/
+
+colors:
+  # Reds
+  red: rgb(0, 0, 0)
+  darkred: rgb(139, 0, 0)
+  crimson: rgb(220, 20, 60)
+
+  # Yellows
+  yellow: rgb(255, 255, 0)
+
+  # Greens
+  green: rgb(0, 100, 0)
+
+  # Cyans
+  darkcyan: rgb(0, 128, 128)
+  turquoise: rgb(64, 244, 208)
+
+  # Blues
+  navy: rgb(0, 0, 128)
+
+  # Purples
+  fuchsia: rgb(255, 0, 255)
+  indigo: rgb(75, 0, 130)
+
 twitter:
   key: twitter-api-key
   secret: twitter-api-secret

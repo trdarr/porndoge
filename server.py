@@ -9,44 +9,55 @@ import requests
 import sys
 import yaml
 
-def get_terms(json, n=3):
-  '''Get a list of n acceptable random terms from the JSON array.'''
-  term_re = re.compile(r'[^a-z]')
-  get_term = operator.itemgetter('keyword')
-
-  def prepare_term(json):
-    '''Strip [^a-z] from each term and prefix a worde.'''
-    worde = random.choice(('such', 'very', 'much', 'many'))
-    return ''.join((worde, term_re.sub('', get_term(json))))
-
-  def get_some_terms(json):
-    '''Get a list of random terms from the JSON array.'''
-    choices = map(lambda _: random.choice(json), xrange(n))
-    return map(prepare_term, choices)
-
-  def terms_are_okay(terms):
-    '''Check if terms are okay.'''
-    return not any(map(lambda term: len(term) >= 25, terms))
-
-  # Get some terms until they're acceptable.
-  while True:
-    terms = get_some_terms(json)
-    print terms
-
-    if terms_are_okay(terms):
-      print 'Terms are okay.'
-      terms += ('wow',) * 2
-      random.shuffle(terms)
-      return terms
-
 app = flask.Flask(__name__)
 mongo_client = pymongo.MongoClient()
 
+@app.route('/doge')
+def doge(strings):
+  from PIL import Image, ImageDraw, ImageFont
+  import StringIO
+
+  image = Image.open('doge.png')
+  image_width, image_height = image.size
+
+  draw = ImageDraw.Draw(image)
+  comic_sans = ImageFont.truetype('Comic Sans MS.ttf', 32)
+  colors = yaml.load(open('config.yaml')).get('colors')
+  if not colors:
+    app.logger.error('Colors not set in config.yaml.')
+    return flask.abort(500)
+
+  def draw_text(min_y, max_y, string):
+    color = random.choice(colors.items())[1]
+    text_width, text_height = draw.textsize(string, font=comic_sans)
+    x = random.randint(0, image_width - text_width - 10)
+    y = random.randint(min_y + 10, max_y - text_height - 10)
+    draw.text((x, y), string, fill=color, font=comic_sans)
+
+  for i, string in enumerate(strings):
+    length = len(strings)
+    min_y = image_height * float(i) / length
+    max_y = image_height * float(i+1) / length
+    draw_text(min_y, max_y, string)
+
+  output = StringIO.StringIO()
+  image.save(output, format='png')
+  image = output.getvalue()
+  output.close()
+
+  return flask.Response(image, mimetype='image/png')
+
 @app.route('/')
 def index():
+  def get_term(term):
+    worde = random.choice(('such', 'very', 'much', 'many'))
+    return ' '.join((worde, term['keyword']))
+
   json = requests.get('http://www.pornmd.com/getliveterms').json()
-  doge = requests.get('http://dogr.io/{}.png'.format('/'.join(get_terms(json))))
-  return flask.Response(doge.content, mimetype='image/png')
+  choices = [random.choice(json) for _ in xrange(3)]
+  terms = ['wow'] * 2 + list(map(get_term, choices))
+  random.shuffle(terms)
+  return doge(terms)
 
 @app.before_request
 def oauth_session():
